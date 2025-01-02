@@ -2,7 +2,7 @@ import csv
 from tkinter import *
 from tkinter import messagebox
 
-# Flight Class
+
 class Flight:
     def __init__(self, flight_id, departure, arrival, date, time, seats_available):
         self.flight_id = flight_id
@@ -15,13 +15,13 @@ class Flight:
     def to_csv_row(self):
         return [self.flight_id, self.departure, self.arrival, self.date, self.time, self.seats_available]
 
-# Passenger Class
+
 class Passenger:
     def __init__(self, passenger_id, name, contact_details, booked_flights):
         self.passenger_id = passenger_id
         self.name = name
         self.contact_details = contact_details
-        self.booked_flights = booked_flights  # List of booked flight IDs
+        self.booked_flights = booked_flights  
 
     def to_csv_row(self):
         return [self.passenger_id, self.name, self.contact_details, ",".join(self.booked_flights)]
@@ -29,7 +29,7 @@ class Passenger:
     def can_book(self, flight_id):
         return flight_id not in self.booked_flights
 
-# BookingManager Class
+
 class BookingManager:
     def __init__(self, flights_file, passengers_file, bookings_file):
         self.flights_file = flights_file
@@ -41,27 +41,27 @@ class BookingManager:
         self.load_data()
 
     def load_data(self):
-        # Load flights
+        
         with open(self.flights_file, "r") as file:
             reader = csv.reader(file)
-            next(reader)  # Skip header
+            next(reader)  
             self.flights = [Flight(*row) for row in reader]
 
-        # Load passengers
+        
         with open(self.passengers_file, "r") as file:
             reader = csv.reader(file)
             next(reader)
             self.passengers = [Passenger(row[0], row[1], row[2], row[3].split(",")) for row in reader]
 
     def save_data(self):
-        # Save flights
+        
         with open(self.flights_file, "w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(["Flight ID", "Departure", "Arrival", "Date", "Time", "Seats Available"])
             for flight in self.flights:
                 writer.writerow(flight.to_csv_row())
 
-        # Save passengers
+        
         with open(self.passengers_file, "w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(["Passenger ID", "Name", "Contact Details", "Booked Flights"])
@@ -93,7 +93,7 @@ class BookingManager:
         if not passenger.can_book(flight_id):
             return "Passenger already booked this flight."
 
-        # Update records
+        
         flight.seats_available -= 1
         passenger.booked_flights.append(flight_id)
         self.save_data()
@@ -109,20 +109,20 @@ class BookingManager:
         if flight_id not in passenger.booked_flights:
             return "No booking found for this flight."
 
-        # Update records
+        
         flight.seats_available += 1
         passenger.booked_flights.remove(flight_id)
         self.save_data()
         return "Booking canceled successfully."
 
-# GUI Implementation
+
 class FlightBookingGUI:
     def __init__(self, manager):
         self.manager = manager
         self.root = Tk()
         self.root.title("Flight Booking System")
 
-        # Flight Booking Section
+       
         Label(self.root, text="Flight Booking").grid(row=0, column=0, columnspan=2)
         Label(self.root, text="Flight ID").grid(row=1, column=0)
         self.flight_id_entry = Entry(self.root)
@@ -142,7 +142,7 @@ class FlightBookingGUI:
         result = self.manager.book_flight(flight_id, passenger_id)
         messagebox.showinfo("Result", result)
 
-# Initialize the system
+
 if __name__ == "__main__":
     manager = BookingManager("flights.csv", "passengers.csv", "bookings.csv")
     FlightBookingGUI(manager)
