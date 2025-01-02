@@ -1,4 +1,5 @@
 import csv
+import os
 
 class Flight:
     def __init__(self, flight_id, departure, arrival, date, time, seats_available):
@@ -35,6 +36,7 @@ class BookingManager:
         self.flights_file = flights_file
         self.passengers_file = passengers_file
         self.bookings_file = bookings_file
+        self.update_log_file = "updateLog.csv"
         self.flights = {}
         self.passengers = {}
         self.bookings = []
@@ -73,7 +75,7 @@ class BookingManager:
         except FileNotFoundError:
             print("Bookings file not found. Starting fresh.")
 
-    def save_data(self):
+    def save_flights(self):
         # Save flights
         with open(self.flights_file, mode='w', newline='') as f:
             writer = csv.writer(f)
@@ -81,6 +83,7 @@ class BookingManager:
             for flight in self.flights.values():
                 writer.writerow(flight.to_csv_format())
 
+    def save_passengers(self):
         # Save passengers
         with open(self.passengers_file, mode='w', newline='') as f:
             writer = csv.writer(f)
@@ -88,11 +91,36 @@ class BookingManager:
             for passenger in self.passengers.values():
                 writer.writerow(passenger.to_csv_format())
 
+    def save_bookings(self):
         # Save bookings
         with open(self.bookings_file, mode='w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(["Transaction Type", "Flight ID", "Passenger ID", "Date"])
             writer.writerows(self.bookings)
+
+    def delete_booking(self, flight_id, passenger_id):
+        with open(self.bookings_file, mode = 'r') as f:
+            reader = csv.reader(f)
+            self.data = []
+            for row in reader:
+                if row[0] == 'CANCEL' and row[1] == flight_id and row[2] == passenger_id:
+                    pass
+                else:
+                    self.data.append(row)
+        with open(self.bookings_file, mode = 'w', newline = '') as f:
+            writer = csv.writer(f)
+            writer.writerows(self.data)
+
+    def log_update(self, transaction_type, flight_id, passenger_id):
+        # Log the update into updateLog.csv
+        log_exists = os.path.exists(self.update_log_file)
+        with open(self.update_log_file, mode='a', newline='') as f:
+            writer = csv.writer(f)
+            if not log_exists:
+                writer.writerow(["Transaction Type", "Flight ID", "Passenger ID", "Timestamp"])
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            writer.writerow([transaction_type, flight_id, passenger_id, timestamp])
 
     def view_schedule(self):
         return [flight.to_csv_format() for flight in self.flights.values()]
@@ -119,7 +147,10 @@ class BookingManager:
                 flight.seats_available -= 1
                 passenger.add_flight(flight_id)
                 self.bookings.append(["BOOK", flight_id, passenger_id, flight.date])
-                self.save_data()
+                self.save_flights()
+                self.save_bookings()
+                self.save_passengers()
+                self.log_update("BOOK", flight_id, passenger_id)
                 return f"Flight {flight_id} booked successfully for passenger {passenger_id}."
             return "Booking failed: No seats available or duplicate booking."
         return "Booking failed: Flight or passenger not found."
@@ -132,7 +163,11 @@ class BookingManager:
                 flight.seats_available += 1
                 passenger.remove_flight(flight_id)
                 self.bookings.append(["CANCEL", flight_id, passenger_id, flight.date])
-                self.save_data()
+                self.save_flights()
+                self.save_bookings()
+                self.save_passengers()
+                # self.delete_booking(flight_id, passenger_id)
+                self.log_update("CANCEL", flight_id, passenger_id)
                 return f"Booking for flight {flight_id} canceled for passenger {passenger_id}."
             return "Cancellation failed: Booking not found."
         return "Cancellation failed: Flight or passenger not found."
